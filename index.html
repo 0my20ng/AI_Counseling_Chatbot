@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 상담 챗봇 - 마음의 동반자</title>
+    <style>
+        /* =================================
+           기본 스타일링 및 리셋
+        ================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* =================================
+           메인 컨테이너 스타일
+        ================================= */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 700px;
+        }
+
+        /* =================================
+           헤더 영역 스타일
+        ================================= */
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 온라인 상태 표시 인디케이터 */
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        /* 온라인 상태 펄스 애니메이션 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* =================================
+           채팅 영역 스타일
+        ================================= */
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 메시지 컨테이너 */
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        /* 메시지 나타나는 애니메이션 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 사용자 메시지는 오른쪽 정렬 */
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        /* 메시지 말풍선 스타일 */
+        .message-bubble {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        /* 봇 메시지 말풍선 */
+        .message.bot .message-bubble {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            color: #333;
+            border-bottom-left-radius: 5px;
+        }
+
+        /* 사용자 메시지 말풍선 */
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        /* 아바타 스타일 */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .bot-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        /* =================================
+           입력 영역 스타일
+        ================================= */
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        /* 입력 필드 포커스 시 스타일 */
+        .input-field:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        /* 전송 버튼 스타일 */
+        .send-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* =================================
+           감정 표시 및 UI 요소 스타일
+        ================================= */
+        
+        /* 감정 분석 결과 표시 */
+        .emotion-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 15px;
+            font-size: 14px;
+        }
+
+        .emotion-icon {
+            font-size: 20px;
+        }
+
+        /* 타이핑 중 표시 */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #666;
+            border-radius: 50%;
+            animation: typing 1.5s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* 타이핑 애니메이션 */
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        /* 빠른 응답 버튼들 */
+        .quick-responses {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .quick-response {
+            padding: 8px 16px;
+            background: rgba(79, 172, 254, 0.1);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #4facfe;
+        }
+
+        .quick-response:hover {
+            background: rgba(79, 172, 254, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* 제안사항 카드 */
+        .suggestion-card {
+            margin-top: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+            border-left: 4px solid #ff8a65;
+        }
+
+        .suggestion-title {
+            font-weight: 600;
+            color: #d84315;
+            margin-bottom: 8px;
+        }
+
+        /* 개인정보 보호 공지 */
+        .privacy-notice {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            color: #2e7d32;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 환영 화면 */
+        .welcome-screen {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .welcome-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #4facfe;
+        }
+
+        /* =================================
+           모바일 반응형 스타일
+        ================================= */
+        @media (max-width: 600px) {
+            .container {
+                height: 100vh;
+                border-radius: 0;
+                margin: 0;
+            }
+            
+            .message-bubble {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <!-- 헤더 영역 -->
+        <div class="header">
+            <h1>🤖 AI 상담 챗봇</h1>
+            <p>마음의 동반자가 되어드리겠습니다</p>
+            <!-- 온라인 상태 표시 -->
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>온라인</span>
+            </div>
+        </div>
+
+        <!-- 채팅 영역 -->
+        <div class="chat-container" id="chatContainer">
+            <!-- 개인정보 보호 공지 -->
+            <div class="privacy-notice">
+                🔒 개인정보 보호: 모든 대화는 익명으로 처리되며 안전하게 보호됩니다.
+            </div>
+            
+            <!-- 환영 화면 -->
+            <div class="welcome-screen">
+                <div class="welcome-icon">💙</div>
+                <h2>안녕하세요!</h2>
+                <p>저는 여러분의 마음을 들어주는 AI 상담사입니다.<br>
+                편안하게 현재 상황이나 고민을 말씀해 주세요.</p>
+            </div>
+        </div>
+
+        <!-- 입력 영역 -->
+        <div class="input-container">
+            <input 
+                type="text" 
+                class="input-field" 
+                id="messageInput" 
+                placeholder="지금 어떤 기분이신가요? 편하게 말씀해 주세요..."
+                maxlength="500"
+            >
+            <button class="send-button" id="sendButton">➤</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * AI 상담 챗봇 메인 클래스
+         * 기획서의 모든 주요 기능을 구현하는 핵심 클래스
+         */
+        class AICounselingChatbot {
+            constructor() {
+                // DOM 요소들 참조
+                this.chatContainer = document.getElementById('chatContainer');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                
+                // 대화 상태 관리 객체
+                this.conversationState = {
+                    stage: 'initial',        // 대화 단계: initial → exploring → analyzing → recommending
+                    emotionHistory: [],      // 감정 분석 기록
+                    concerns: [],           // 파악된 고민/관심사들
+                    sessionCount: 0         // 대화 세션 횟수
+                };
+                
+                this.isTyping = false;      // 봇이 타이핑 중인지 여부
+                
+                // 이벤트 리스너 초기화 및 사용자 인사
+                this.initializeEventListeners();
+                this.greetUser();
+            }
+
+            /**
+             * 이벤트 리스너 초기화
+             * 전송 버튼 클릭 및 엔터키 입력 처리
+             */
+            initializeEventListeners() {
+                // 전송 버튼 클릭 시
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                
+                // 입력 필드에서 엔터키 입력 시 (Shift+Enter는 제외)
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+            }
+
+            /**
+             * 초기 인사 메시지 표시
+             * 1초 후 환영 메시지와 빠른 응답 버튼들을 보여줌
+             */
+            async greetUser() {
+                await this.delay(1000);
+                this.addBotMessage(
+                    "안녕하세요! 오늘 저에게 찾아와 주셔서 감사합니다. 🌟\n\n" +
+                    "저는 여러분이 현재 겪고 계신 상황을 정리하고 이해하는 데 도움을 드리는 AI 상담사입니다.\n\n" +
+                    "지금 어떤 기분이신가요? 또는 최근에 어떤 일들이 있으셨는지 편하게 말씀해 주세요.",
+                    ['기분이 좋지 않아요', '스트레스를 받고 있어요', '혼란스러워요', '괜찮은 편이에요']
+                );
+            }
+
+            /**
+             * 메시지 전송 처리
+             * 사용자 입력을 받아 화면에 표시하고 봇 응답 생성
+             */
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message || this.isTyping) return;
+
+                // 사용자 메시지 화면에 추가
+                this.addUserMessage(message);
+                this.messageInput.value = '';
+                this.sendButton.disabled = true;
+
+                // 봇 응답 처리
+                await this.processBotResponse(message);
+                this.sendButton.disabled = false;
+            }
+
+            /**
+             * 사용자 메시지를 화면에 추가
+             * @param {string} message - 사용자가 입력한 메시지
+             */
+            addUserMessage(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message user';
+                messageDiv.innerHTML = `
+                    <div class="avatar user-avatar">👤</div>
+                    <div class="message-bubble">${this.escapeHtml(message)}</div>
+                `;
+                this.chatContainer.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            /**
+             * 봇 메시지를 화면에 추가
+             * @param {string} message - 봇이 보낼 메시지
+             * @param {Array} quickResponses - 빠른 응답 버튼들 (선택사항)
+             */
+            addBotMessage(message, quickResponses = []) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot';
+                
+                // 빠른 응답 버튼들 HTML 생성
+                let quickResponsesHtml = '';
+                if (quickResponses.length > 0) {
+                    quickResponsesHtml = `
+                        <div class="quick-responses">
+                            ${quickResponses.map(response => 
+                                `<div class="quick-response" onclick="chatbot.selectQuickResponse('${response}')">${response}</div>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+
+                messageDiv.innerHTML = `
+                    <div class="avatar bot-avatar">🤖</div>
+                    <div class="message-bubble">
+                        ${this.escapeHtml(message).replace(/\n/g, '<br>')}
+                        ${quickResponsesHtml}
+                    </div>
+                `;
+                this.chatContainer.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            /**
+             * 빠른 응답 버튼 클릭 처리
+             * @param {string} response - 선택된 빠른 응답 텍스트
+             */
+            selectQuickResponse(response) {
+                this.messageInput.value = response;
+                this.sendMessage();
+            }
+
+            /**
+             * 봇 응답 생성 및 처리
+             * 감정 분석, 키워드 추출, 대화 단계별 응답 생성
+             * @param {string} userMessage - 사용자 메시지
+             */
+            async processBotResponse(userMessage) {
+                this.showTypingIndicator();
+                
+                // 감정 분석 실행 (키워드 기반 간단한 분석)
+                const emotion = this.analyzeEmotion(userMessage);
+                this.conversationState.emotionHistory.push(emotion);
+                
+                // 고민/관심사 키워드 추출
+                const concerns = this.extractConcerns(userMessage);
+                this.conversationState.concerns.push(...concerns);
+
+                // 타이핑 시뮬레이션 (2초 대기)
+                await this.delay(2000);
+                this.removeTypingIndicator();
+
+                let response = '';
+                let quickResponses = [];
+                let showEmotion = false;
+
+                // 대화 단계별 응답 생성
+                switch (this.conversationState.stage) {
+                    case 'initial':
+                        // 초기 단계: 첫 응답 및 감정 확인
+                        response = this.generateInitialResponse(userMessage, emotion);
+                        quickResponses = this.getInitialQuickResponses(emotion);
+                        this.conversationState.stage = 'exploring';
+                        showEmotion = true;
+                        break;
+                    
+                    case 'exploring':
+                        // 탐색 단계: 상황 파악 및 깊이 있는 질문
+                        response = this.generateExploringResponse(userMessage, emotion);
+                        quickResponses = this.getExploringQuickResponses();
+                        if (this.conversationState.sessionCount >= 3) {
+                            this.conversationState.stage = 'analyzing';
+                        }
+                        showEmotion = true;
+                        break;
+                    
+                    case 'analyzing':
+                        // 분석 단계: 지금까지의 대화 내용 정리 및 분석
+                        response = this.generateAnalyzingResponse();
+                        this.conversationState.stage = 'recommending';
+                        break;
+                    
+                    case 'recommending':
+                        // 추천 단계: 맞춤형 조언 및 후속 조치 제안
+                        response = this.generateRecommendationResponse();
+                        break;
+                }
+
+                // 응답 메시지 화면에 추가
+                this.addBotMessage(response, quickResponses);
+                
+                // 감정 분석 결과 표시
+                if (showEmotion) {
+                    this.showEmotionIndicator(emotion);
+                }
+
+                this.conversationState.sessionCount++;
+            }
+
+            /**
+             * 감정 분석 함수
+             * 키워드 매칭을 통한 기본적인 감정 분석
+             * @param {string} message - 분석할 메시지
+             * @returns {string} - 분석된 감정 ('슬픔', '불안', '분노', '스트레스', '중립')
+             */
+            analyzeEmotion(message) {
+                const emotions = {
+                    '슬픔': ['슬프', '우울', '힘들', '외로', '괴로', '아프', '눈물'],
+                    '불안': ['불안', '걱정', '두려', '무서', '긴장', '초조'],
+                    '분노': ['화나', '짜증', '억울', '분하', '열받', '답답'],
+                    '스트레스': ['스트레스', '압박', '부담', '피곤', '지쳐']
+                };
+
+                // 각 감정의 키워드가 메시지에 포함되어 있는지 확인
+                for (const [emotion, keywords] of Object.entries(emotions)) {
+                    if (keywords.some(keyword => message.includes(keyword))) {
+                        return emotion;
+                    }
+                }
+                return '중립';
+            }
+
+            /**
+             * 관심사/고민 키워드 추출
+             * @param {string} message - 분석할 메시지
+             * @returns {Array} - 추출된 관심사 배열
+             */
+            extractConcerns(message) {
+                const concernKeywords = {
+                    '인간관계': ['친구', '가족', '연인', '동료', '상사', '갈등'],
+                    '업무/학업': ['일', '직장', '학교', '공부', '시험', '성적'],
+                    '건강': ['몸', '건강', '아프', '병', '치료'],
+                    '미래': ['미래', '진로', '취업', '결혼', '계획']
+                };
+
+                const concerns = [];
+                for (const [concern, keywords] of Object.entries(concernKeywords)) {
+                    if (keywords.some(keyword => message.includes(keyword))) {
+                        concerns.push(concern);
+                    }
+                }
+                return concerns;
+            }
+
+            /**
+             * 초기 단계 응답 생성
+             * 감정에 따른 맞춤형 첫 응답
+             * @param {string} message - 사용자 메시지
+             * @param {string} emotion - 분석된 감정
+             * @returns {string} - 생성된 응답
+             */
+            generateInitialResponse(message, emotion) {
+                const responses = {
+                    '슬픔': "마음이 많이 아프신 것 같아요. 이런 감정을 느끼시는 것이 자연스럽습니다. 어떤 상황에서 이런 기분이 드셨는지 조금 더 자세히 말씀해 주실 수 있을까요?",
+                    '불안': "불안한 마음이 드시는군요. 그런 감정이 언제부터 시작되었는지, 특별히 어떤 상황에서 더 심해지는지 말씀해 주세요.",
+                    '분노': "화가 나신 상황을 이해할 수 있어요. 분노는 자연스러운 감정입니다. 어떤 일이 있었는지 천천히 말씀해 주세요.",
+                    '스트레스': "스트레스를 많이 받고 계시는군요. 현재 가장 부담되는 것이 무엇인지 함께 정리해볼까요?"
+                };
+                
+                return responses[emotion] || "현재 상황을 좀 더 구체적으로 말씀해 주시면 도움이 될 것 같아요. 어떤 일들이 있으셨나요?";
+            }
+
+            /**
+             * 탐색 단계 응답 생성
+             * 상황을 더 깊이 파악하기 위한 질문들
+             * @param {string} message - 사용자 메시지
+             * @param {string} emotion - 분석된 감정
+             * @returns {string} - 생성된 응답
+             */
+            generateExploringResponse(message, emotion) {
+                const responses = [
+                    "말씀해 주신 내용을 잘 들었습니다. 이런 상황에서 그런 감정을 느끼시는 것이 충분히 이해됩니다.",
+                    "상황을 더 잘 이해하기 위해 물어보고 싶은 것이 있어요. 평소에는 이런 문제를 어떻게 해결하셨나요?",
+                    "지금까지 말씀해 주신 것들을 종합해보면서, 이 상황에서 가장 어려운 부분이 무엇인지 정리해볼까요?"
+                ];
+                
+                return responses[this.conversationState.sessionCount % responses.length];
+            }
+
+            /**
+             * 분석 단계 응답 생성
+             * 지금까지의 대화 내용을 종합하여 상황 정리
+             * @returns {string} - 생성된 분석 응답
+             */
+            generateAnalyzingResponse() {
+                const mainConcerns = [...new Set(this.conversationState.concerns)];
+                const dominantEmotion = this.getMostFrequentEmotion();
+                
+                let analysis = "지금까지 대화를 통해 파악한 내용을 정리해드릴게요.\n\n";
+                
+                if (mainConcerns.length > 0) {
+                    analysis += `주요 관심사: ${mainConcerns.join(', ')}\n`;
+                }
+                
+                analysis += `감정 상태: ${dominantEmotion}\n\n`;
+                analysis += "이런 상황에서 스스로를 돌보는 것이 중요합니다. 몇 가지 도움이 될 만한 방법들을 제안해드릴게요.";
+                
+                return analysis;
+            }
+
+            /**
+             * 추천 단계 응답 생성
+             * 맞춤형 조언 및 전문 상담 연계 제안
+             * @returns {string} - 생성된 추천 응답
+             */
+            generateRecommendationResponse() {
+                return "🌟 개인맞춤 제안사항\n\n" +
+                       "1. 감정 일기 쓰기: 매일 조금씩 감정을 기록해보세요\n" +
+                       "2. 규칙적인 운동이나 산책\n" +
+                       "3. 신뢰할 수 있는 사람과의 대화\n\n" +
+                       "더 전문적인 도움이 필요하시다면 근처 상담센터를 안내해드릴 수 있습니다. 어떻게 생각하세요?";
+            }
+
+            /**
+             * 초기 단계 빠른 응답 버튼 생성
+             * @param {string} emotion - 분석된 감정
+             * @returns {Array} - 빠른 응답 옵션들
+             */
+            getInitialQuickResponses(emotion) {
+                const responses = {
+                    '슬픔': ['더 자세히 말하고 싶어요', '혼자 있고 싶어요', '누군가와 이야기하고 싶어요'],
+                    '불안': ['계속 걱정돼요', '잠을 잘 못 자요', '집중이 안 돼요'],
+                    '분노': ['정말 화가 나요', '억울해요', '어떻게 해야 할지 모르겠어요'],
+                    '스트레스': ['너무 바빠요', '압박감이 심해요', '휴식이 필요해요']
+                };
+                return responses[emotion] || ['더 말하고 싶어요', '조언이 필요해요', '잘 모르겠어요'];
+            }
+
+            /**
+             * 탐색 단계 빠른 응답 버튼 생성
+             * @returns {Array} - 빠른 응답 옵션들
+             */
+            getExploringQuickResponses() {
+                return ['맞아요', '아니에요, 다른 것 같아요', '좀 더 생각해볼게요', '도움이 필요해요'];
+            }
+
+            /**
+             * 가장 빈번한 감정 찾기
+             * 감정 기록에서 가장 많이 나타난 감정을 반환
+             * @returns {string} - 가장 빈번한 감정
+             */
+            getMostFrequentEmotion() {
+                const emotionCount = {};
+                this.conversationState.emotionHistory.forEach(emotion => {
+                    emotionCount[emotion] = (emotionCount[emotion] || 0) + 1;
+                });
+                
+                return Object.keys(emotionCount).reduce((a, b) => 
+                    emotionCount[a] > emotionCount[b] ? a : b
+                ) || '중립';
+            }
+
+            /**
+             * 감정 분석 결과 표시
+             * 마지막 봇 메시지에 감정 인디케이터 추가
+             * @param {string} emotion - 표시할 감정
+             */
+            showEmotionIndicator(emotion) {
+                const emotionIcons = {
+                    '슬픔': '😢',
+                    '불안': '😰',
+                    '분노': '😠',
+                    '스트레스': '😵',
+                    '중립': '😐'
+                };
+
+                const lastMessage = this.chatContainer.lastElementChild;
+                const emotionDiv = document.createElement('div');
+                emotionDiv.className = 'emotion-indicator';
+                emotionDiv.innerHTML = `
+                    <span class="emotion-icon">${emotionIcons[emotion]}</span>
+                    <span>감지된 감정: ${emotion}</span>
+                `;
+                lastMessage.querySelector('.message-bubble').appendChild(emotionDiv);
+            }
+
+            /**
+             * 타이핑 중 인디케이터 표시
+             * 봇이 응답을 생성하는 동안 타이핑 애니메이션 표시
+             */
+            showTypingIndicator() {
+                this.isTyping = true;
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message bot typing-message';
+                typingDiv.innerHTML = `
+                    <div class="avatar bot-avatar">🤖</div>
+                    <div class="message-bubble">
+                        <div class="typing-indicator">
+                            <span>상담사가 입력 중</span>
+                            <div class="typing-dots">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                this.chatContainer.appendChild(typingDiv);
+                this.scrollToBottom();
+            }
+
+            /**
+             * 타이핑 중 인디케이터 제거
+             */
+            removeTypingIndicator() {
+                this.isTyping = false;
+                const typingMessage = this.chatContainer.querySelector('.typing-message');
+                if (typingMessage) {
+                    typingMessage.remove();
+                }
+            }
+
+            /**
+             * 채팅 컨테이너를 맨 아래로 스크롤
+             * 새 메시지가 추가될 때마다 자동으로 스크롤
+             */
+            scrollToBottom() {
+                this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+            }
+
+            /**
+             * HTML 이스케이프 처리
+             * XSS 공격 방지를 위해 사용자 입력의 HTML 태그를 이스케이프
+             * @param {string} text - 이스케이프할 텍스트
+             * @returns {string} - 이스케이프된 텍스트
+             */
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            /**
+             * 지연 함수
+             * 타이핑 시뮬레이션 등에 사용되는 비동기 지연
+             * @param {number} ms - 지연 시간(밀리초)
+             * @returns {Promise} - 지연 Promise
+             */
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        /**
+         * 전역 변수 및 초기화
+         * 페이지 로드 완료 시 챗봇 인스턴스 생성
+         */
+        let chatbot;
+        document.addEventListener('DOMContentLoaded', () => {
+            chatbot = new AICounselingChatbot();
+        });
