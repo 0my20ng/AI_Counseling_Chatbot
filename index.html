@@ -251,6 +251,15 @@
             margin: 15px 0;
         }
 
+        /* 완료된 평가 질문 스타일 */
+        .assessment-card.completed .rating-option {
+            cursor: not-allowed;
+        }
+
+        .assessment-card.completed .rating-option.selected {
+            opacity: 1 !important;
+        }
+
         .assessment-header {
             display: flex;
             justify-content: space-between;
@@ -1173,8 +1182,18 @@
              * 평가 점수 선택 처리
              */
             selectRating(score) {
-                // 이전 선택 해제
-                const options = document.querySelectorAll('.rating-option');
+                // 현재 활성화된 질문의 선택 옵션들만 가져오기
+                const currentQuestionCard = event.target.closest('.assessment-card');
+                if (!currentQuestionCard) return;
+                
+                // 해당 질문이 이미 완료된 질문인지 확인
+                if (currentQuestionCard.classList.contains('completed')) {
+                    return; // 이미 완료된 질문은 다시 선택할 수 없음
+                }
+                
+                const options = currentQuestionCard.querySelectorAll('.rating-option');
+                
+                // 이전 선택 해제 (현재 질문 내에서만)
                 options.forEach(option => option.classList.remove('selected'));
                 
                 // 현재 선택 표시
@@ -1182,6 +1201,16 @@
                 
                 // 점수 저장
                 this.conversationState.selectedRating = score;
+                
+                // 현재 질문을 완료 상태로 표시하고 버튼들 비활성화
+                currentQuestionCard.classList.add('completed');
+                options.forEach(option => {
+                    option.style.pointerEvents = 'none';
+                    option.style.opacity = '0.6';
+                });
+                
+                // 선택된 버튼만 강조 표시 유지
+                event.target.closest('.rating-option').style.opacity = '1';
                 
                 // 자동으로 다음 질문으로 진행
                 setTimeout(() => {
@@ -1206,6 +1235,12 @@
                 // 다음 질문으로 진행
                 this.conversationState.currentQuestionIndex++;
                 setTimeout(() => this.askNextAssessmentQuestion(), 500);
+
+                // 중복 응답 방지 로직 추가
+                if (this.session.scores[assessmentType].length > this.conversationState.currentQuestionIndex) {
+                    console.log('이미 답변한 질문입니다.');
+                    return;
+                }
             }
 
             /**
