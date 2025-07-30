@@ -42,6 +42,73 @@
         }
 
         /* =================================
+           설정 패널 스타일
+        ================================= */
+        .settings-panel {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            display: none;
+        }
+
+        .settings-panel.show {
+            display: block;
+        }
+
+        .api-config {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .api-config select,
+        .api-config input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .api-config input[type="password"] {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .save-config-btn {
+            background: #4facfe;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .save-config-btn:hover {
+            background: #3d8bfe;
+        }
+
+        .api-status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .api-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .api-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* =================================
            헤더 영역 스타일
         ================================= */
         .header {
@@ -66,6 +133,21 @@
         .header p {
             font-size: 13px;
             opacity: 0.9;
+        }
+
+        .settings-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .settings-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         /* 세션 정보 및 상태 표시 */
@@ -656,6 +738,15 @@
             .rating-option {
                 min-width: auto;
             }
+
+            .api-config {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .api-config input[type="password"] {
+                min-width: auto;
+            }
         }
 
         /* =================================
@@ -681,12 +772,29 @@
 <body>
     <!-- 메인 컨테이너 -->
     <div class="container">
+        <!-- 설정 패널 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="api-config">
+                <select id="aiProvider">
+                    <option value="openai">OpenAI GPT</option>
+                    <option value="google">Google Gemini</option>
+                    <option value="local">로컬 모델 (무료)</option>
+                </select>
+                <input type="password" id="apiKey" placeholder="API 키 입력 (선택사항)">
+                <button class="save-config-btn" onclick="chatbot.saveApiConfig()">저장</button>
+            </div>
+            <div class="api-status" id="apiStatus">
+                설정을 저장하여 AI 연결을 테스트하세요.
+            </div>
+        </div>
+
         <!-- 헤더 영역 -->
         <div class="header">
             <div class="header-content">
                 <div>
+                    <button class="settings-toggle" onclick="chatbot.toggleSettings()">⚙️ AI 설정</button>
                     <h1>🧠 AI 전문 상담 챗봇</h1>
-                    <p>익명 보장 • 표준화된 심리평가 • 개인정보 보호</p>
+                    <p>익명 보장 • 자연스러운 대화 • 개인정보 보호</p>
                 </div>
                 <!-- 세션 정보 -->
                 <div class="session-info">
@@ -709,19 +817,19 @@
             <!-- 환영 화면 -->
             <div class="welcome-screen" id="welcomeScreen">
                 <div class="welcome-icon">🤝</div>
-                <h2>전문 AI 상담사에 오신 것을 환영합니다</h2>
-                <p>표준화된 심리평가 도구(PHQ-9, GAD-7, PSS)를 활용한<br>
-                과학적이고 체계적인 상담을 제공합니다.</p>
+                <h2>자연스러운 AI 상담사에 오신 것을 환영합니다</h2>
+                <p>GPT, Gemini 등 최신 AI 모델을 활용한<br>
+                공감적이고 자연스러운 상담을 제공합니다.</p>
                 
                 <!-- 상담 모드 선택 -->
                 <div class="mode-selection mt-20">
-                    <div class="mode-card" onclick="chatbot.selectMode('structured')">
-                        <h3>📋 구조화된 평가</h3>
-                        <p>표준 심리검사<br>(PHQ-9, GAD-7, PSS)</p>
+                    <div class="mode-card" onclick="chatbot.selectMode('conversation')">
+                        <h3>💬 자유 대화 상담</h3>
+                        <p>자연스러운 대화를 통한<br>감정 분석 및 상담</p>
                     </div>
-                    <div class="mode-card" onclick="chatbot.selectMode('free')">
-                        <h3>💬 자유 대화</h3>
-                        <p>키워드·감정 분석<br>기반 상담</p>
+                    <div class="mode-card" onclick="chatbot.selectMode('assessment')">
+                        <h3>📋 표준 심리검사</h3>
+                        <p>PHQ-9, GAD-7, PSS<br>표준화된 평가</p>
                     </div>
                 </div>
             </div>
@@ -742,10 +850,9 @@
 
     <script>
         /**
-         * AI 상담 챗봇 메인 클래스 - Python 백엔드 로직 기반 구현
-         * 익명 세션 관리, 표준화된 심리평가, 감정 분석 포함
+         * 향상된 AI 상담 챗봇 클래스 - 자연스러운 AI 응답 연동
          */
-        class AICounselingChatbot {
+        class EnhancedAICounselingChatbot {
             constructor() {
                 // DOM 요소들 참조
                 this.chatContainer = document.getElementById('chatContainer');
@@ -753,29 +860,40 @@
                 this.sendButton = document.getElementById('sendButton');
                 this.welcomeScreen = document.getElementById('welcomeScreen');
                 this.sessionIdElement = document.getElementById('sessionId');
+                this.settingsPanel = document.getElementById('settingsPanel');
+                this.apiStatus = document.getElementById('apiStatus');
                 
-                // 세션 관리 (익명 세션 시뮬레이션)
+                // AI 설정
+                this.aiConfig = {
+                    provider: 'local', // 기본값은 로컬 모델
+                    apiKey: null,
+                    isConnected: false
+                };
+                
+                // 세션 관리
                 this.session = {
                     id: this.generateSessionId(),
                     responses: [],
                     scores: {},
-                    sentimentAnalysis: [],
+                    emotionalProfile: {},
+                    conversationSummary: '',
                     createdAt: new Date().toISOString(),
-                    mode: null // 'structured' or 'free'
+                    mode: null
                 };
                 
                 // 대화 상태 관리
                 this.conversationState = {
-                    phase: 'greeting',           // greeting, mode_selection, assessment, free_conversation, summary
-                    currentAssessmentType: null, // 'phq9', 'gad7', 'stress'
+                    phase: 'greeting',
+                    currentAssessmentType: null,
                     currentQuestionIndex: 0,
                     conversationHistory: [],
-                    selectedRating: null
+                    emotionalThemes: new Set(),
+                    keyProblems: []
                 };
                 
                 this.isTyping = false;
                 
-                // 평가 도구 데이터 (Python 코드에서 가져옴)
+                // 평가 도구 데이터
                 this.assessmentData = {
                     phq9: {
                         name: "PHQ-9 우울증 선별검사",
@@ -860,13 +978,13 @@
                     ]
                 };
 
-                
                 this.initializeSession();
                 this.initializeEventListeners();
+                this.loadSavedConfig();
             }
 
             /**
-             * 세션 초기화 - 익명 세션 ID 생성 및 표시
+             * 세션 초기화
              */
             initializeSession() {
                 this.sessionIdElement.textContent = `세션: ${this.session.id}`;
@@ -874,7 +992,7 @@
             }
 
             /**
-             * 익명 세션 ID 생성 (Python 코드의 _generate_session_id 구현)
+             * 익명 세션 ID 생성
              */
             generateSessionId() {
                 const timestamp = Date.now().toString();
@@ -882,14 +1000,14 @@
             }
 
             /**
-             * 간단한 해시 함수 (SHA-256 시뮬레이션)
+             * 간단한 해시 함수
              */
             hashString(str) {
                 let hash = 0;
                 for (let i = 0; i < str.length; i++) {
                     const char = str.charCodeAt(i);
                     hash = ((hash << 5) - hash) + char;
-                    hash = hash & hash; // 32비트 정수로 변환
+                    hash = hash & hash;
                 }
                 return Math.abs(hash).toString(16);
             }
@@ -898,10 +1016,8 @@
              * 이벤트 리스너 초기화
              */
             initializeEventListeners() {
-                // 전송 버튼 클릭
                 this.sendButton.addEventListener('click', () => this.sendMessage());
                 
-                // 엔터키 입력 (Shift+Enter는 줄바꿈)
                 this.messageInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -909,7 +1025,6 @@
                     }
                 });
 
-                // 텍스트 영역 자동 높이 조절
                 this.messageInput.addEventListener('input', () => {
                     this.messageInput.style.height = 'auto';
                     this.messageInput.style.height = this.messageInput.scrollHeight + 'px';
@@ -917,30 +1032,315 @@
             }
 
             /**
+             * 설정 패널 토글
+             */
+            toggleSettings() {
+                this.settingsPanel.classList.toggle('show');
+            }
+
+            /**
+             * API 설정 저장
+             */
+            async saveApiConfig() {
+                const provider = document.getElementById('aiProvider').value;
+                const apiKey = document.getElementById('apiKey').value;
+                
+                this.aiConfig.provider = provider;
+                this.aiConfig.apiKey = apiKey || null;
+                
+                // 로컬 스토리지에 저장 (API 키는 세션에만)
+                localStorage.setItem('aiProvider', provider);
+                if (apiKey) {
+                    sessionStorage.setItem('apiKey', apiKey);
+                }
+                
+                // 연결 테스트
+                await this.testApiConnection();
+            }
+
+            /**
+             * 저장된 설정 로드
+             */
+            loadSavedConfig() {
+                const savedProvider = localStorage.getItem('aiProvider');
+                const savedApiKey = sessionStorage.getItem('apiKey');
+                
+                if (savedProvider) {
+                    document.getElementById('aiProvider').value = savedProvider;
+                    this.aiConfig.provider = savedProvider;
+                }
+                
+                if (savedApiKey) {
+                    document.getElementById('apiKey').value = savedApiKey;
+                    this.aiConfig.apiKey = savedApiKey;
+                    this.testApiConnection();
+                }
+            }
+
+            /**
+             * API 연결 테스트
+             */
+            async testApiConnection() {
+                const statusElement = this.apiStatus;
+                
+                try {
+                    statusElement.className = 'api-status';
+                    statusElement.textContent = '연결 테스트 중...';
+                    
+                    if (this.aiConfig.provider === 'local') {
+                        this.aiConfig.isConnected = true;
+                        statusElement.className = 'api-status connected';
+                        statusElement.textContent = '✅ 로컬 모델 사용 (무료, 제한적 성능)';
+                        return;
+                    }
+                    
+                    if (!this.aiConfig.apiKey) {
+                        statusElement.className = 'api-status error';
+                        statusElement.textContent = '❌ API 키가 필요합니다';
+                        return;
+                    }
+                    
+                    // 간단한 테스트 요청
+                    const testResponse = await this.callAIAPI("안녕하세요", true);
+                    
+                    if (testResponse) {
+                        this.aiConfig.isConnected = true;
+                        statusElement.className = 'api-status connected';
+                        statusElement.textContent = `✅ ${this.aiConfig.provider.toUpperCase()} 연결 성공`;
+                    } else {
+                        throw new Error('API 응답 없음');
+                    }
+                    
+                } catch (error) {
+                    this.aiConfig.isConnected = false;
+                    statusElement.className = 'api-status error';
+                    statusElement.textContent = `❌ 연결 실패: ${error.message}`;
+                }
+            }
+
+            /**
+             * AI API 호출 (OpenAI, Google Gemini 등)
+             */
+            async callAIAPI(userMessage, isTest = false) {
+                if (this.aiConfig.provider === 'local') {
+                    return this.generateLocalResponse(userMessage, isTest);
+                }
+                
+                try {
+                    if (this.aiConfig.provider === 'openai') {
+                        return await this.callOpenAI(userMessage, isTest);
+                    } else if (this.aiConfig.provider === 'google') {
+                        return await this.callGoogleGemini(userMessage, isTest);
+                    }
+                } catch (error) {
+                    console.error('AI API 호출 실패:', error);
+                    // API 실패 시 로컬 모델로 폴백
+                    return this.generateLocalResponse(userMessage, isTest);
+                }
+            }
+
+            /**
+             * OpenAI API 호출
+             */
+            async callOpenAI(userMessage, isTest = false) {
+                if (isTest) {
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.aiConfig.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'gpt-3.5-turbo',
+                            messages: [{ role: 'user', content: '테스트' }],
+                            max_tokens: 50
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return '연결 성공';
+                }
+
+                const systemPrompt = this.buildSystemPrompt();
+                const conversationContext = this.buildConversationContext();
+                
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.aiConfig.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            ...conversationContext,
+                            { role: 'user', content: userMessage }
+                        ],
+                        max_tokens: 500,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+
+            /**
+             * Google Gemini API 호출
+             */
+            async callGoogleGemini(userMessage, isTest = false) {
+                if (isTest) {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.aiConfig.apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: '테스트' }] }]
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return '연결 성공';
+                }
+
+                const systemPrompt = this.buildSystemPrompt();
+                const fullPrompt = `${systemPrompt}\n\n사용자: ${userMessage}\n\n상담사:`;
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.aiConfig.apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: fullPrompt }] }],
+                        generationConfig: {
+                            maxOutputTokens: 500,
+                            temperature: 0.7
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            }
+
+            /**
+             * 로컬 모델 응답 생성 (폴백)
+             */
+            generateLocalResponse(userMessage, isTest = false) {
+                if (isTest) return '로컬 모델 사용';
+
+                const keywords = this.extractKeywords(userMessage);
+                const sentiment = this.analyzeSentiment(userMessage);
+                
+                // 감정 기반 응답 생성
+                const responses = {
+                    depression: [
+                        "힘든 시간을 보내고 계시는군요. 그런 감정을 느끼는 것이 자연스러운 반응이에요.",
+                        "우울한 마음이 지속되고 있는 것 같아요. 혼자가 아니라는 것을 기억해주세요.",
+                        "지금의 감정이 일시적일 수 있어요. 작은 변화부터 시작해보면 어떨까요?"
+                    ],
+                    anxiety: [
+                        "불안한 마음이 크게 느껴지고 있군요. 천천히 깊게 숨을 쉬어보세요.",
+                        "걱정이 많으신 것 같아요. 하나씩 차근차근 해결해나가면 됩니다.",
+                        "불안감은 우리 모두가 경험하는 감정이에요. 당신만의 문제가 아닙니다."
+                    ],
+                    stress: [
+                        "많은 스트레스를 받고 계시는 것 같아요. 잠시 휴식이 필요할 수도 있겠네요.",
+                        "압박감이 크게 느껴지고 있군요. 우선순위를 정해보시는 것은 어떨까요?",
+                        "스트레스 상황에서 벗어나 잠시 자신을 돌보는 시간을 가져보세요."
+                    ],
+                    general: [
+                        "말씀해주신 내용을 잘 들었습니다. 어떤 부분이 가장 힘드신가요?",
+                        "현재 상황이 쉽지 않으신 것 같아요. 더 자세히 이야기해주실 수 있을까요?",
+                        "그 감정을 느끼는 것이 당연해요. 혼자서 모든 것을 감당하지 마세요."
+                    ]
+                };
+
+                // 키워드 기반 응답 선택
+                const topCategory = Object.keys(keywords)[0];
+                let selectedResponses = responses.general;
+                
+                if (topCategory && responses[topCategory]) {
+                    selectedResponses = responses[topCategory];
+                }
+                
+                const randomResponse = selectedResponses[Math.floor(Math.random() * selectedResponses.length)];
+                
+                // 추가 질문 생성
+                const followUpQuestions = [
+                    "이런 상황이 언제부터 시작되었나요?",
+                    "가장 힘든 순간은 언제인가요?",
+                    "누군가와 이야기해본 적이 있나요?",
+                    "어떤 도움이 필요하다고 생각하세요?",
+                    "평소에 스트레스를 어떻게 해소하시나요?"
+                ];
+                
+                const randomQuestion = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
+                
+                return `${randomResponse} ${randomQuestion}`;
+            }
+
+            /**
+             * 시스템 프롬프트 구성
+             */
+            buildSystemPrompt() {
+                return `당신은 전문적인 심리상담사입니다. 다음 지침을 따라주세요:
+
+1. 공감적이고 따뜻한 톤으로 응답하세요
+2. 내담자의 감정을 인정하고 검증해주세요
+3. 판단하지 말고 경청하는 자세를 유지하세요
+4. 적절한 질문을 통해 더 깊은 탐색을 도와주세요
+5. 전문적 치료가 필요하다고 판단되면 권유하세요
+6. 자해나 자살 위험이 감지되면 즉시 전문기관 연락을 권하세요
+7. 응답은 3-5문장으로 간결하게 작성하세요
+
+현재 상담 모드: ${this.session.mode || '대화형 상담'}
+주요 감정 테마: ${Array.from(this.conversationState.emotionalThemes).join(', ') || '분석 중'}`;
+            }
+
+            /**
+             * 대화 컨텍스트 구성
+             */
+            buildConversationContext() {
+                const context = [];
+                const recentHistory = this.conversationState.conversationHistory.slice(-6); // 최근 6개 대화만
+                
+                recentHistory.forEach(conv => {
+                    context.push({ role: 'user', content: conv.input });
+                    if (conv.response) {
+                        context.push({ role: 'assistant', content: conv.response });
+                    }
+                });
+                
+                return context;
+            }
+
+            /**
              * 상담 모드 선택 처리
              */
             selectMode(mode) {
                 this.session.mode = mode;
-                this.conversationState.phase = 'mode_selection';
+                this.conversationState.phase = 'conversation';
                 
-                // 환영 화면 숨기기
                 this.welcomeScreen.style.display = 'none';
                 
-                if (mode === 'structured') {
-                    this.addSystemMessage("📋 구조화된 평가 모드를 선택하셨습니다.");
+                if (mode === 'conversation') {
+                    this.addSystemMessage("💬 자유 대화 상담 모드를 선택하셨습니다.");
                     this.addBotMessage(
-                        "어떤 문제로 상담을 원하시는지 간단히 말씀해주세요. " +
-                        "답변을 바탕으로 적절한 표준 심리검사를 선택해드리겠습니다.",
-                        ["우울한 기분이 지속되고 있어요", "불안하고 걱정이 많아요", "스트레스가 심해요", "전반적으로 힘들어요"]
+                        "안녕하세요! 편안한 마음으로 현재 상황이나 고민을 자유롭게 말씀해주세요. " +
+                        "필요하다면 언제든 표준 심리검사를 제안드릴 수 있습니다.",
+                        ["기분이 좋지 않아요", "요즘 힘든 일이 많아요", "스트레스를 많이 받고 있어요", "누군가와 이야기하고 싶어요"]
                     );
                 } else {
-                    this.addSystemMessage("💬 자유 대화 모드를 선택하셨습니다.");
+                    this.addSystemMessage("📋 표준 심리검사 모드를 선택하셨습니다.");
                     this.addBotMessage(
-                        "편안하게 이야기해주세요. 키워드와 감정을 분석해서 도움을 드리겠습니다. " +
-                        "언제든지 '평가'라고 입력하시면 구조화된 평가로 전환할 수 있습니다.",
-                        ["기분이 좋지 않아요", "요즘 힘든 일이 많아요", "누군가와 이야기하고 싶어요"]
+                        "어떤 문제로 검사를 받고 싶으신지 간단히 말씀해주세요. " +
+                        "적절한 표준화된 심리검사를 추천해드리겠습니다.",
+                        ["우울감이 지속되고 있어요", "불안하고 걱정이 많아요", "스트레스가 심해요", "전반적으로 힘들어요"]
                     );
-                    this.conversationState.phase = 'free_conversation';
                 }
             }
 
@@ -951,31 +1351,31 @@
                 const message = this.messageInput.value.trim();
                 if (!message || this.isTyping) return;
 
-                // 사용자 메시지 화면에 추가
                 this.addUserMessage(message);
                 this.messageInput.value = '';
                 this.messageInput.style.height = 'auto';
                 this.sendButton.disabled = true;
 
-                // 응답 처리
                 await this.processResponse(message);
                 this.sendButton.disabled = false;
             }
 
             /**
-             * 응답 처리 및 다음 단계 결정 (Python 코드의 process_response 구현)
+             * 응답 처리 및 다음 단계 결정
              */
             async processResponse(userInput) {
                 // 특수 명령어 처리
-                if (userInput.toLowerCase().includes('분석')) {
+                if (userInput.toLowerCase().includes('검사') || userInput.toLowerCase().includes('평가')) {
+                    if (this.session.mode === 'conversation') {
+                        this.addSystemMessage("📋 표준 심리검사로 전환합니다.");
+                        this.session.mode = 'assessment';
+                        this.determineAssessmentPath(userInput);
+                        return;
+                    }
+                } else if (userInput.toLowerCase().includes('분석') && this.conversationState.conversationHistory.length > 0) {
                     this.provideConversationAnalysis();
                     return;
-                } else if (userInput.toLowerCase().includes('평가') && this.session.mode === 'free') {
-                    this.addSystemMessage("📋 구조화된 평가로 전환합니다.");
-                    this.session.mode = 'structured';
-                    this.determineAssessmentPath(userInput);
-                    return;
-                } else if (userInput.toLowerCase().includes('종료') || userInput.toLowerCase().includes('quit')) {
+                } else if (userInput.toLowerCase().includes('종료')) {
                     this.endConversation();
                     return;
                 }
@@ -983,162 +1383,148 @@
                 // 감정 및 키워드 분석
                 const analysis = this.analyzeSentimentAndEmotion(userInput);
                 const keywords = this.extractKeywords(userInput);
-
-                // 세션에 응답 저장 (익명화)
-                this.saveResponse(userInput, analysis, keywords);
-
-                // 타이핑 인디케이터 표시
-                this.showTypingIndicator();
-                await this.delay(2000);
-                this.removeTypingIndicator();
-
-                // 단계별 응답 처리
-                switch (this.conversationState.phase) {
-                    case 'mode_selection':
-                        if (this.session.mode === 'structured') {
-                            this.determineAssessmentPath(userInput);
-                        } else {
-                            this.handleFreeFormConversation(userInput, analysis, keywords);
-                        }
-                        break;
-
-                    case 'assessment':
-                        this.handleAssessmentResponse(userInput, analysis);
-                        break;
-
-                    case 'free_conversation':
-                        this.handleFreeFormConversation(userInput, analysis, keywords);
-                        break;
-
-                    case 'summary':
-                        this.provideSummaryAndRecommendations();
-                        break;
-                }
-            }
-
-            /**
-             * 개인정보 익명화 처리 (Python 코드의 _anonymize_text 구현)
-             */
-            anonymizeText(text) {
-                const patterns = [
-                    { regex: /\b[가-힣]{2,4}\b(?=\s*(?:님|씨|이|가|은|는))/g, replacement: '[이름]' },
-                    { regex: /\b\d{2,3}-\d{3,4}-\d{4}\b/g, replacement: '[전화번호]' },
-                    { regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[이메일]' },
-                    { regex: /\b\d{6}-\d{7}\b/g, replacement: '[주민번호]' }
-                ];
-
-                let anonymized = text;
-                patterns.forEach(pattern => {
-                    anonymized = anonymized.replace(pattern.regex, pattern.replacement);
-                });
-                return anonymized;
-            }
-
-            /**
-             * 응답을 세션에 저장 (익명화 적용)
-             */
-            saveResponse(userInput, analysis, keywords) {
-                const anonymizedInput = this.anonymizeText(userInput);
-                this.session.responses.push({
-                    input: anonymizedInput,
+                
+                // 대화 기록에 추가
+                this.conversationState.conversationHistory.push({
+                    input: this.anonymizeText(userInput),
                     analysis: analysis,
                     keywords: keywords,
                     timestamp: new Date().toISOString()
                 });
-            }
 
-            /**
-             * 감정 및 상황 분석 (Hugging Face 모델 시뮬레이션)
-             */
-            analyzeSentimentAndEmotion(text) {
-                const analysis = {
-                    sentiment: this.analyzeSentiment(text),
-                    emotions: this.analyzeEmotions(text),
-                    confidence: Math.random() * 0.3 + 0.7 // 0.7-1.0 사이의 신뢰도
-                };
-                return analysis;
-            }
-
-            /**
-             * 감정 점수 분석 (간단한 키워드 기반)
-             */
-            analyzeSentiment(text) {
-                const positiveWords = ["좋", "행복", "기쁨", "만족", "즐거", "편안", "희망", "사랑"];
-                const negativeWords = ["나쁘", "슬프", "화나", "우울", "불안", "걱정", "힘들", "괴로"];
-                
-                let positiveScore = 0;
-                let negativeScore = 0;
-                
-                const textLower = text.toLowerCase();
-                positiveWords.forEach(word => {
-                    if (textLower.includes(word)) positiveScore++;
+                // 감정 테마 업데이트
+                Object.keys(keywords).forEach(theme => {
+                    this.conversationState.emotionalThemes.add(theme);
                 });
-                negativeWords.forEach(word => {
-                    if (textLower.includes(word)) negativeScore++;
-                });
-                
-                if (positiveScore > negativeScore) return 'positive';
-                else if (negativeScore > positiveScore) return 'negative';
-                else return 'neutral';
+
+                // 타이핑 인디케이터 표시
+                this.showTypingIndicator();
+
+                try {
+                    // AI 응답 생성
+                    const aiResponse = await this.callAIAPI(userInput);
+                    
+                    this.removeTypingIndicator();
+                    
+                    // 응답을 대화 기록에 추가
+                    if (this.conversationState.conversationHistory.length > 0) {
+                        this.conversationState.conversationHistory[this.conversationState.conversationHistory.length - 1].response = aiResponse;
+                    }
+                    
+                    this.addBotMessage(aiResponse);
+                    
+                    // 감정 분석 결과 표시 (키워드가 감지된 경우)
+                    if (Object.keys(keywords).length > 0) {
+                        setTimeout(() => {
+                            this.showEmotionAnalysis(keywords, analysis);
+                        }, 1000);
+                    }
+                    
+                    // 위험 상황 감지
+                    this.checkForRiskFactors(userInput, keywords);
+                    
+                    // 정기적 분석 제공 (5회마다)
+                    if (this.conversationState.conversationHistory.length % 5 === 0) {
+                        setTimeout(() => {
+                            this.addSystemMessage("📊 대화 분석을 제공합니다.");
+                            this.provideConversationAnalysis();
+                        }, 2000);
+                    }
+                    
+                    // 검사 제안 (특정 키워드 반복 시)
+                    this.suggestAssessmentIfNeeded(keywords);
+                    
+                } catch (error) {
+                    this.removeTypingIndicator();
+                    this.addBotMessage("죄송합니다. 일시적인 문제가 발생했습니다. 다시 말씀해주시겠어요?");
+                    console.error('응답 생성 오류:', error);
+                }
             }
 
             /**
-             * 세부 감정 분석
+             * 위험 요소 감지 및 대응
              */
-            analyzeEmotions(text) {
-                const emotions = {};
-                const textLower = text.toLowerCase();
+            checkForRiskFactors(userInput, keywords) {
+                const riskKeywords = ['죽고싶', '자살', '자해', '끝내고싶', '사라지고싶', '더이상', '포기'];
+                const hasRiskKeywords = riskKeywords.some(keyword => userInput.toLowerCase().includes(keyword));
                 
-                Object.entries(this.keywordPatterns).forEach(([emotion, keywords]) => {
-                    let score = 0;
-                    keywords.forEach(keyword => {
-                        if (textLower.includes(keyword)) score++;
+                if (hasRiskKeywords) {
+                    setTimeout(() => {
+                        this.addSystemMessage("🆘 긴급 상황 감지");
+                        this.addBotMessage(
+                            "지금 매우 힘든 상황에 계신 것 같습니다. 혼자서 이 모든 것을 감당하지 마세요. " +
+                            "전문가의 도움을 받으실 것을 강력히 권합니다.\n\n" +
+                            "• 생명의전화: 1393 (24시간)\n" +
+                            "• 청소년전화: 1388\n" +
+                            "• 정신건강위기상담전화: 1577-0199\n\n" +
+                            "당신의 생명은 소중합니다."
+                        );
+                    }, 500);
+                }
+            }
+
+            /**
+             * 검사 제안 로직
+             */
+            suggestAssessmentIfNeeded(keywords) {
+                const keywordCounts = {};
+                
+                // 지금까지의 대화에서 키워드 빈도 계산
+                this.conversationState.conversationHistory.forEach(conv => {
+                    Object.keys(conv.keywords).forEach(category => {
+                        keywordCounts[category] = (keywordCounts[category] || 0) + 1;
                     });
-                    if (score > 0) {
-                        emotions[emotion] = Math.min(score / keywords.length, 1.0);
-                    }
                 });
                 
-                return emotions;
+                // 특정 키워드가 3회 이상 나타나면 검사 제안
+                Object.entries(keywordCounts).forEach(([category, count]) => {
+                    if (count >= 3 && this.session.mode === 'conversation') {
+                        setTimeout(() => {
+                            let assessmentName = '';
+                            let assessmentType = '';
+                            
+                            if (category === 'depression') {
+                                assessmentName = 'PHQ-9 우울증 선별검사';
+                                assessmentType = 'phq9';
+                            } else if (category === 'anxiety') {
+                                assessmentName = 'GAD-7 불안장애 선별검사';
+                                assessmentType = 'gad7';
+                            } else if (category === 'stress') {
+                                assessmentName = '지각된 스트레스 척도(PSS)';
+                                assessmentType = 'stress';
+                            }
+                            
+                            if (assessmentName) {
+                                this.addBotMessage(
+                                    `대화를 통해 ${category === 'depression' ? '우울감' : category === 'anxiety' ? '불안감' : '스트레스'} 관련 내용이 지속적으로 나타나고 있습니다. ` +
+                                    `보다 정확한 평가를 위해 ${assessmentName}를 받아보시는 것은 어떨까요?`,
+                                    ["네, 검사를 받아보겠습니다", "아니요, 대화를 계속하겠습니다", "나중에 받아보겠습니다"]
+                                );
+                            }
+                        }, 1500);
+                    }
+                });
             }
 
             /**
-             * 키워드 추출 (Python 코드의 extract_keywords 구현)
-             */
-            extractKeywords(text) {
-                const foundKeywords = {};
-                const textLower = text.toLowerCase();
-                
-                Object.entries(this.keywordPatterns).forEach(([category, keywords]) => {
-                    const foundInCategory = keywords.filter(keyword => textLower.includes(keyword));
-                    if (foundInCategory.length > 0) {
-                        foundKeywords[category] = foundInCategory;
-                    }
-                });
-                
-                return foundKeywords;
-            }
-
-            /**
-             * 평가 경로 결정 (Python 코드의 determine_assessment_path 구현)
+             * 평가 경로 결정
              */
             determineAssessmentPath(userInput) {
                 const userLower = userInput.toLowerCase();
                 
-                // 키워드 기반 평가 유형 결정
                 if (this.keywordPatterns.depression.some(keyword => userLower.includes(keyword))) {
                     this.conversationState.currentAssessmentType = 'phq9';
                     this.addSystemMessage("🔍 우울감과 관련된 내용이 감지되었습니다.");
-                    this.addBotMessage("PHQ-9 우울증 선별검사를 진행하겠습니다.");
                 } else if (this.keywordPatterns.anxiety.some(keyword => userLower.includes(keyword))) {
                     this.conversationState.currentAssessmentType = 'gad7';
                     this.addSystemMessage("🔍 불안감과 관련된 내용이 감지되었습니다.");
-                    this.addBotMessage("GAD-7 불안장애 선별검사를 진행하겠습니다.");
                 } else {
                     this.conversationState.currentAssessmentType = 'stress';
                     this.addSystemMessage("🔍 전반적인 스트레스 평가를 진행하겠습니다.");
-                    this.addBotMessage("지각된 스트레스 척도(PSS)를 실시하겠습니다.");
                 }
+
+                const assessmentName = this.assessmentData[this.conversationState.currentAssessmentType].name;
+                this.addBotMessage(`${assessmentName}를 진행하겠습니다. 각 질문에 솔직하게 답변해주세요.`);
 
                 this.conversationState.phase = 'assessment';
                 this.conversationState.currentQuestionIndex = 0;
@@ -1148,7 +1534,7 @@
             }
 
             /**
-             * 다음 평가 질문 제시 (Python 코드의 ask_next_assessment_question 구현)
+             * 다음 평가 질문 제시
              */
             askNextAssessmentQuestion() {
                 const assessmentType = this.conversationState.currentAssessmentType;
@@ -1204,44 +1590,33 @@
              * 평가 점수 선택 처리
              */
             selectRating(score) {
-                // 현재 활성화된 질문의 선택 옵션들만 가져오기
                 const currentQuestionCard = event.target.closest('.assessment-card');
-                if (!currentQuestionCard) return;
-                
-                // 해당 질문이 이미 완료된 질문인지 확인
-                if (currentQuestionCard.classList.contains('completed')) {
-                    return; // 이미 완료된 질문은 다시 선택할 수 없음
+                if (!currentQuestionCard || currentQuestionCard.classList.contains('completed')) {
+                    return;
                 }
                 
                 const options = currentQuestionCard.querySelectorAll('.rating-option');
                 
-                // 이전 선택 해제 (현재 질문 내에서만)
                 options.forEach(option => option.classList.remove('selected'));
-                
-                // 현재 선택 표시
                 event.target.closest('.rating-option').classList.add('selected');
                 
-                // 점수 저장
                 this.conversationState.selectedRating = score;
                 
-                // 현재 질문을 완료 상태로 표시하고 버튼들 비활성화
                 currentQuestionCard.classList.add('completed');
                 options.forEach(option => {
                     option.style.pointerEvents = 'none';
                     option.style.opacity = '0.6';
                 });
                 
-                // 선택된 버튼만 강조 표시 유지
                 event.target.closest('.rating-option').style.opacity = '1';
                 
-                // 자동으로 다음 질문으로 진행
                 setTimeout(() => {
                     this.handleAssessmentResponse(score.toString(), null);
                 }, 500);
             }
 
             /**
-             * 평가 응답 처리 (Python 코드의 handle_assessment_response 구현)
+             * 평가 응답 처리
              */
             handleAssessmentResponse(userInput, analysis) {
                 const score = parseInt(userInput);
@@ -1250,112 +1625,101 @@
                     return;
                 }
 
-                // 점수 저장
                 const assessmentType = this.conversationState.currentAssessmentType;
                 this.session.scores[assessmentType].push(score);
                 
-                // 다음 질문으로 진행
                 this.conversationState.currentQuestionIndex++;
                 setTimeout(() => this.askNextAssessmentQuestion(), 500);
-
-                // 중복 응답 방지 로직 추가
-                if (this.session.scores[assessmentType].length > this.conversationState.currentQuestionIndex) {
-                    console.log('이미 답변한 질문입니다.');
-                    return;
-                }
             }
 
             /**
-             * 자유 형식 대화 처리 (Python 코드의 handle_free_form_conversation 구현)
+             * 개인정보 익명화 처리
              */
-            handleFreeFormConversation(userInput, analysis, keywords) {
-                this.conversationState.phase = 'free_conversation';
-                
-                // 대화 기록 저장
-                this.conversationState.conversationHistory.push({
-                    input: userInput,
-                    analysis: analysis,
-                    keywords: keywords,
-                    timestamp: new Date().toISOString()
-                });
-
-                // 공감적 응답 생성
-                const response = this.generateEmpatheticResponse(userInput, keywords, analysis);
-                this.addBotMessage(response);
-
-                // 감정 분석 결과 표시
-                if (Object.keys(keywords).length > 0 || analysis.emotions) {
-                    this.showEmotionAnalysis(keywords, analysis);
-                }
-
-                // 주기적 분석 제공 (3회마다)
-                if (this.conversationState.conversationHistory.length % 3 === 0) {
-                    setTimeout(() => {
-                        this.addSystemMessage("📊 대화 분석을 제공합니다.");
-                        this.provideConversationAnalysis();
-                    }, 1000);
-                }
-            }
-
-            /**
-             * 공감적 응답 생성 (Python 코드의 generate_empathetic_response 구현)
-             */
-            generateEmpatheticResponse(userInput, keywords, analysis) {
-                const responses = {
-                    depression: [
-                        "많이 지치고 힘든 시간을 보내고 계신 것 같아요. 그런 감정을 느끼는 게 자연스러운 일이에요.",
-                        "우울한 감정이 계속되면 정말 고통스러울 수 있어요. 혼자가 아니라는 걸 기억해주세요.",
-                        "요즘 모든 게 무의미하게 느껴진다고 하셨죠. 그런 감정을 안고 지내는 게 쉽지 않으실 거예요."
-                    ],
-                    anxiety: [
-                        "불안감이 크게 다가오고 있군요. 마음이 긴장되면 일상조차 힘들어질 수 있어요.",
-                        "걱정이 많아 마음이 무겁게 느껴지시는 것 같아요. 그럴 때 스스로를 돌보는 게 필요해요.",
-                        "예측할 수 없는 상황이 주는 불안이 참 힘들죠. 그 마음을 이해합니다."
-                    ],
-                    stress: [
-                        "많은 압박을 받으면서 지내고 계시군요. 부담이 커서 숨이 막힐 때가 있으시죠?",
-                        "스트레스가 계속되면 기운이 빠질 수 있어요. 그 무게를 혼자 감당하고 계시진 않나요?",
-                        "일상 속에서 압도당하는 기분이 드시는 것 같아요. 그 감정을 저와 함께 정리해볼까요?"
-                    ],
-                    anger: [
-                        "화가 나는 상황이 정말 버겁게 다가오고 있는 것 같아요. 그런 감정을 느끼는 건 당연해요.",
-                        "속상하고 억울한 마음이 많이 드시나 봐요. 그 감정을 안전하게 표현하는 게 중요해요.",
-                        "분노와 답답함이 겹쳐 있는 것 같아요. 그 상황이 어떻게 시작되었는지 이야기해주실래요?"
-                    ],
-                    relationships: [
-                        "관계에서의 갈등이 참 힘든 일인 걸 알고 있어요. 사람 사이의 문제는 누구에게나 어렵죠.",
-                        "사람들과의 관계에서 지치고 힘든 마음을 느끼고 계시군요. 그 경험을 제가 들어드릴게요.",
-                        "신뢰와 오해가 얽히면 참 힘들어지죠. 그 상황을 조금 더 자세히 이야기해주시겠어요?"
-                    ],
-                    work_school: [
-                        "직장이나 학업에서 받는 압박감이 크신 것 같아요. 성취와 부담 사이에서 힘드신가요?",
-                        "과제와 평가의 무게가 마음을 짓누르고 있군요. 그 상황에서 어떤 점이 가장 어려우신가요?",
-                        "진로와 성적 문제로 고민하고 계신 것 같아요. 그동안 혼자 감당하시느라 힘드셨죠?"
-                    ],
-                    physical: [
-                        "신체적인 불편감이 마음까지 영향을 주고 있는 것 같아요. 건강은 삶의 중요한 부분이죠.",
-                        "몸이 힘들면 정신적인 여유를 갖기도 어려워요. 최근 컨디션은 어떠신가요?",
-                        "지속적인 피로와 통증이 삶의 질을 떨어뜨릴 수 있어요. 지금 가장 불편한 부분이 무엇인가요?"
-                    ]
-                };
-
-                const followUpQuestions = [
-                    "그 상황에서 가장 힘든 부분은 무엇인가요?",
-                    "이런 감정이 언제부터 시작되었나요?",
-                    "지금 필요한 도움은 무엇이라고 생각하시나요?",
-                    "그 감정을 다루기 위해 해본 것이 있을까요?",
-                    "혹시 이야기를 조금 더 자세히 해주실 수 있을까요?"
+            anonymizeText(text) {
+                const patterns = [
+                    { regex: /\b[가-힣]{2,4}\b(?=\s*(?:님|씨|이|가|은|는))/g, replacement: '[이름]' },
+                    { regex: /\b\d{2,3}-\d{3,4}-\d{4}\b/g, replacement: '[전화번호]' },
+                    { regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[이메일]' },
+                    { regex: /\b\d{6}-\d{7}\b/g, replacement: '[주민번호]' }
                 ];
 
-                const topCategory = Object.keys(keywords)[0];
-                let selectedResponse = "말씀해주신 내용을 잘 들었습니다. 더 이야기해주시겠어요?";
-                if (topCategory && responses[topCategory]) {
-                    const categoryResponses = responses[topCategory];
-                    selectedResponse = categoryResponses[Math.floor(Math.random() * categoryResponses.length)];
-                }
+                let anonymized = text;
+                patterns.forEach(pattern => {
+                    anonymized = anonymized.replace(pattern.regex, pattern.replacement);
+                });
+                return anonymized;
+            }
 
-                const randomFollowUp = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
-                return `${selectedResponse} ${randomFollowUp}`;
+            /**
+             * 감정 및 상황 분석
+             */
+            analyzeSentimentAndEmotion(text) {
+                const analysis = {
+                    sentiment: this.analyzeSentiment(text),
+                    emotions: this.analyzeEmotions(text),
+                    confidence: Math.random() * 0.3 + 0.7
+                };
+                return analysis;
+            }
+
+            /**
+             * 감정 점수 분석
+             */
+            analyzeSentiment(text) {
+                const positiveWords = ["좋", "행복", "기쁨", "만족", "즐거", "편안", "희망", "사랑"];
+                const negativeWords = ["나쁘", "슬프", "화나", "우울", "불안", "걱정", "힘들", "괴로"];
+                
+                let positiveScore = 0;
+                let negativeScore = 0;
+                
+                const textLower = text.toLowerCase();
+                positiveWords.forEach(word => {
+                    if (textLower.includes(word)) positiveScore++;
+                });
+                negativeWords.forEach(word => {
+                    if (textLower.includes(word)) negativeScore++;
+                });
+                
+                if (positiveScore > negativeScore) return 'positive';
+                else if (negativeScore > positiveScore) return 'negative';
+                else return 'neutral';
+            }
+
+            /**
+             * 세부 감정 분석
+             */
+            analyzeEmotions(text) {
+                const emotions = {};
+                const textLower = text.toLowerCase();
+                
+                Object.entries(this.keywordPatterns).forEach(([emotion, keywords]) => {
+                    let score = 0;
+                    keywords.forEach(keyword => {
+                        if (textLower.includes(keyword)) score++;
+                    });
+                    if (score > 0) {
+                        emotions[emotion] = Math.min(score / keywords.length, 1.0);
+                    }
+                });
+                
+                return emotions;
+            }
+
+            /**
+             * 키워드 추출
+             */
+            extractKeywords(text) {
+                const foundKeywords = {};
+                const textLower = text.toLowerCase();
+                
+                Object.entries(this.keywordPatterns).forEach(([category, keywords]) => {
+                    const foundInCategory = keywords.filter(keyword => textLower.includes(keyword));
+                    if (foundInCategory.length > 0) {
+                        foundKeywords[category] = foundInCategory;
+                    }
+                });
+                
+                return foundKeywords;
             }
 
             /**
@@ -1403,7 +1767,7 @@
             }
 
             /**
-             * 대화 분석 제공 (Python 코드의 provide_conversation_analysis 구현)
+             * 대화 분석 제공
              */
             provideConversationAnalysis() {
                 if (this.conversationState.conversationHistory.length === 0) {
@@ -1413,10 +1777,17 @@
 
                 // 키워드 빈도 분석
                 const keywordFrequency = {};
-                this.conversationState.conversationHistory.forEach(conv => {
+                const emotionalPatterns = [];
+                
+                this.conversationState.conversationHistory.forEach((conv, index) => {
                     Object.keys(conv.keywords).forEach(category => {
                         keywordFrequency[category] = (keywordFrequency[category] || 0) + 1;
                     });
+                    
+                    // 감정 패턴 추적
+                    if (conv.analysis && conv.analysis.sentiment) {
+                        emotionalPatterns.push(conv.analysis.sentiment);
+                    }
                 });
 
                 const analysisDiv = document.createElement('div');
@@ -1424,11 +1795,11 @@
                 
                 const sortedKeywords = Object.entries(keywordFrequency)
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3);
+                    .slice(0, 5);
 
                 const categoryNames = {
                     depression: "우울감 관련",
-                    anxiety: "불안감 관련",
+                    anxiety: "불안감 관련", 
                     stress: "스트레스 관련",
                     anger: "분노감 관련",
                     relationships: "인간관계 관련",
@@ -1436,14 +1807,19 @@
                     physical: "신체적 증상 관련"
                 };
 
+                // 감정 변화 분석
+                const recentEmotions = emotionalPatterns.slice(-5);
+                const emotionalTrend = this.analyzeEmotionalTrend(recentEmotions);
+
                 analysisDiv.innerHTML = `
                     <div class="avatar bot-avatar">📊</div>
                     <div class="message-bubble">
                         <div class="summary-card">
                             <div class="summary-header">
-                                <h3>📊 대화 분석 결과</h3>
+                                <h3>📊 종합 대화 분석</h3>
                             </div>
-                            <h4>🔍 주요 키워드 분석:</h4>
+                            
+                            <h4>🔍 주요 관심사 (${this.conversationState.conversationHistory.length}회 대화 기준):</h4>
                             ${sortedKeywords.length > 0 ? sortedKeywords.map(([category, count]) => 
                                 `<div class="emotion-item">
                                     <span>${categoryNames[category] || category}</span>
@@ -1451,12 +1827,17 @@
                                 </div>`
                             ).join('') : '<p>특별한 패턴이 감지되지 않았습니다.</p>'}
                             
-                            <h4 style="margin-top: 15px;">💭 감정 패턴:</h4>
-                            <p>지속적인 대화를 통해 감정 상태를 모니터링하고 있습니다.</p>
-                            ${sortedKeywords.some(([cat]) => cat === 'depression') ? 
-                                '<p>• 우울감 관련 표현이 반복적으로 나타나고 있습니다.</p>' : ''}
-                            ${sortedKeywords.some(([cat]) => cat === 'anxiety') ? 
-                                '<p>• 불안감 관련 표현이 지속되고 있습니다.</p>' : ''}
+                            <h4 style="margin-top: 15px;">💭 감정 상태 변화:</h4>
+                            <p>${emotionalTrend}</p>
+                            
+                            <h4 style="margin-top: 15px;">🎯 주요 발견사항:</h4>
+                            ${this.generateInsights(sortedKeywords, emotionalPatterns)}
+                            
+                            <div style="margin-top: 20px; padding: 15px; background: rgba(79, 172, 254, 0.1); border-radius: 10px;">
+                                <p><strong>💡 상담사 소견:</strong> 지속적인 대화를 통해 ${this.conversationState.conversationHistory.length}회의 상호작용을 분석한 결과, 
+                                ${sortedKeywords.length > 0 ? `주로 ${categoryNames[sortedKeywords[0][0]]} 영역에서 어려움을 겪고 계신 것으로 보입니다.` : '다양한 주제에 대해 균형잡힌 대화를 나누고 계십니다.'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1466,7 +1847,56 @@
             }
 
             /**
-             * 결과 요약 및 권장사항 제공 (Python 코드의 provide_summary_and_recommendations 구현)
+             * 감정 트렌드 분석
+             */
+            analyzeEmotionalTrend(emotions) {
+                if (emotions.length < 3) return "분석을 위한 데이터가 부족합니다.";
+                
+                const positiveCount = emotions.filter(e => e === 'positive').length;
+                const negativeCount = emotions.filter(e => e === 'negative').length;
+                const neutralCount = emotions.filter(e => e === 'neutral').length;
+                
+                if (negativeCount > positiveCount + neutralCount) {
+                    return "최근 대화에서 부정적인 감정이 지속적으로 나타나고 있습니다.";
+                } else if (positiveCount > negativeCount + neutralCount) {
+                    return "최근 대화에서 긍정적인 감정이 증가하는 경향을 보입니다.";
+                } else {
+                    return "감정 상태가 변화하며 안정적인 패턴을 유지하고 있습니다.";
+                }
+            }
+
+            /**
+             * 인사이트 생성
+             */
+            generateInsights(sortedKeywords, emotionalPatterns) {
+                const insights = [];
+                
+                if (sortedKeywords.length > 0) {
+                    const topCategory = sortedKeywords[0][0];
+                    const topCount = sortedKeywords[0][1];
+                    
+                    if (topCount >= 3) {
+                        insights.push(`• ${topCategory === 'depression' ? '우울감' : topCategory === 'anxiety' ? '불안감' : '스트레스'} 관련 주제가 반복적으로 나타나고 있어 주의깊은 관찰이 필요합니다.`);
+                    }
+                }
+                
+                if (emotionalPatterns.filter(e => e === 'negative').length > emotionalPatterns.length * 0.7) {
+                    insights.push('• 부정적 감정이 지배적으로 나타나고 있어 전문적 지원이 도움될 수 있습니다.');
+                }
+                
+                if (sortedKeywords.some(([cat]) => cat === 'relationships')) {
+                    insights.push('• 인간관계 영역에서의 어려움이 감지되었습니다.');
+                }
+                
+                if (insights.length === 0) {
+                    insights.push('• 다양한 주제에 대해 균형잡힌 표현을 하고 계십니다.');
+                }
+                
+                return insights.join('<br>');
+            }
+
+            /**
+             * 결과 요약 및 권장사항 제공
              */
             provideSummaryAndRecommendations() {
                 const assessmentType = this.conversationState.currentAssessmentType;
@@ -1519,15 +1949,16 @@
                 // 상담 계속 여부 확인
                 setTimeout(() => {
                     this.addBotMessage(
-                        "상담을 계속하시겠습니까? 추가로 어떤 도움이 필요하신지 말씀해주세요.",
-                        ["네, 계속 하겠습니다", "다른 평가를 받고 싶어요", "상담을 종료하겠습니다"]
+                        "검사 결과를 바탕으로 추가 상담을 계속하시거나, 다른 검사를 받아보실 수 있습니다. 어떻게 도와드릴까요?",
+                        ["대화 상담을 계속하겠습니다", "다른 검사도 받아보고 싶어요", "상담을 종료하겠습니다"]
                     );
-                    this.conversationState.phase = 'greeting';
+                    this.conversationState.phase = 'conversation';
+                    this.session.mode = 'conversation';
                 }, 1000);
             }
 
             /**
-             * 점수 해석 (Python 코드의 interpret_score 구현)
+             * 점수 해석
              */
             interpretScore(score, assessmentType) {
                 switch (assessmentType) {
@@ -1555,7 +1986,7 @@
             }
 
             /**
-             * 맞춤형 권장사항 생성 (Python 코드의 provide_recommendations 구현)
+             * 맞춤형 권장사항 생성
              */
             generateRecommendations(score, assessmentType) {
                 let recommendations = '';
@@ -1687,7 +2118,7 @@
                     <div class="avatar bot-avatar">🤖</div>
                     <div class="message-bubble">
                         <div class="typing-indicator">
-                            <span>상담사가 분석 중</span>
+                            <span>AI 상담사가 분석 중</span>
                             <div class="typing-dots">
                                 <div class="typing-dot"></div>
                                 <div class="typing-dot"></div>
@@ -1722,11 +2153,9 @@
                     "💚 언제든 다시 도움이 필요하시면 페이지를 새로고침해서 새로운 상담을 시작하세요."
                 );
                 
-                // 입력 비활성화
                 this.messageInput.disabled = true;
                 this.sendButton.disabled = true;
                 
-                // 세션 데이터 정리 시뮬레이션
                 setTimeout(() => {
                     this.session = null;
                     console.log('세션 데이터가 안전하게 삭제되었습니다.');
@@ -1759,11 +2188,10 @@
 
         /**
          * 전역 변수 및 초기화
-         * 페이지 로드 완료 시 챗봇 인스턴스 생성
          */
         let chatbot;
         document.addEventListener('DOMContentLoaded', () => {
-            chatbot = new AICounselingChatbot();
+            chatbot = new EnhancedAICounselingChatbot();
         });
     </script>
 </body>
