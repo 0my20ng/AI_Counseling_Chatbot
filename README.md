@@ -2,6 +2,8 @@
 
 마음의 동반자가 되는 AI 상담 챗봇입니다. 내담자가 자신의 문제를 인식하고 정리하는 초기 상담 단계를 돕는 웹 기반 도구입니다.
 
+https://docs.google.com/forms/d/e/1FAIpQLSe73v-L53IN0X7W1Z7XAULwe2Xl1LgH0N6TCBBuMOKBdQqLmg/viewform?usp=header
+
 ## 🌟 주요 기능
 
 - **24시간 접근 가능**: 언제든지 상담 시작 가능
