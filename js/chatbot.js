@@ -205,6 +205,19 @@ class EnhancedAICounselingChatbot {
     /**
      * 응답 처리 및 다음 단계 결정
      */
+
+    async provideFinalAnalysisAndEnd() {
+        this.addSystemMessage("상담을 종료하기 전, 전체 대화 내용을 바탕으로 '초기 진단' 요약을 제공해 드립니다.");
+
+        // 1. 마지막 분석을 요청
+        await this.provideConversationAnalysis(); 
+
+        // 2. (잠시 후) 진짜 종료
+        setTimeout(() => {
+            this.endConversation();
+        }, 1500);
+    }
+
     async processResponse(userInput) {
         // 특수 명령어 처리
         if (userInput.toLowerCase().includes('검사') || userInput.toLowerCase().includes('평가')) {
@@ -218,7 +231,8 @@ class EnhancedAICounselingChatbot {
             this.provideConversationAnalysis();
             return;
         } else if (userInput.toLowerCase().includes('종료')) {
-            this.endConversation();
+            // this.endConversation();
+            this.provideFinalAnalysisAndEnd();
             return;
         }
 

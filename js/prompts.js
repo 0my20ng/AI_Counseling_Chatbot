@@ -16,7 +16,7 @@ function buildSystemPrompt(conversationState, session) {
 당신은 전문적이고 공감적인 심리상담사 AI입니다. 내담자가 자신의 감정과 상황을 이해하고 정리할 수 있도록 돕는 것이 주요 목표입니다.
 
 ## 핵심 가치
-- **공감과 경청**: 내담자의 감정을 진심으로 이해하고 인정합니다
+- **공감과 경청**: 내담자의 감정을 진심으로 이해하고 인정합니다. (이것이 당신의 최우선 임무입니다.)
 - **비판단적 태도**: 어떤 감정이나 생각도 옳고 그름으로 판단하지 않습니다
 - **안전한 공간**: 내담자가 편안하게 자신을 표현할 수 있는 환경을 조성합니다
 - **전문성**: 심리학적 지식을 바탕으로 적절한 질문과 통찰을 제공합니다
@@ -135,7 +135,7 @@ ${conversationState.keyProblems.length > 0 ?
 
 /**
  * 유저 프롬프트 생성
- * 현재 대화 맥락과 함께 사용자 입력을 구조화합니다.
+ * (수정됨): 로컬 분석 결과를 제거하여 AI가 공감에만 집중하도록 수정
  */
 function buildUserPrompt(userInput, conversationState, analysis, keywords) {
     const conversationCount = conversationState.conversationHistory.length;
@@ -154,44 +154,31 @@ function buildUserPrompt(userInput, conversationState, analysis, keywords) {
         });
     }
     
-    // 감정 분석 정보
-    let analysisInfo = '\n\n## 현재 메시지 분석\n';
-    analysisInfo += `- 전반적 감정: ${analysis.sentiment === 'positive' ? '긍정적' : analysis.sentiment === 'negative' ? '부정적' : '중립적'}\n`;
-    
-    if (Object.keys(keywords).length > 0) {
-        analysisInfo += '- 감지된 키워드 카테고리:\n';
-        Object.keys(keywords).forEach(category => {
-            const categoryName = CATEGORY_NAMES[category] || category;
-            analysisInfo += `  * ${categoryName}\n`;
-        });
-    }
-    
-    // 위험 신호 체크
+    // 🔴 [수정] 
+    // '공감 부재'의 원인이었던 로컬 분석(analysisInfo) 부분을 완전히 제거합니다.
+    // AI가 사용자의 원본 메시지만 보고 스스로 감정을 판단하도록 합니다.
+    // let analysisInfo = ... (이전 코드 블록 삭제됨)
+
+    // 위험 신호 체크는 AI에게 중요한 정보이므로 유지합니다.
     const urgency = detectUrgency(userInput);
-    if (urgency) {
-        analysisInfo += '\n⚠️ **위험 신호 감지**: 자살/자해 관련 표현이 포함되어 있습니다. 즉각적이고 신중한 대응이 필요합니다.\n';
-    }
-    
-    // 감정 강도
-    const intensity = analyzeEmotionalIntensity(userInput);
-    analysisInfo += `- 감정 강도: ${intensity === 'high' ? '매우 높음 (즉각적 지지 필요)' : intensity === 'medium' ? '중간' : '낮음'}\n`;
     
     // 최종 프롬프트 조합
-    return `${conversationSummary}${analysisInfo}
+    return `${conversationSummary}
 
 ## 내담자의 현재 메시지
 "${userInput}"
 
 ---
 
-**중요**: 위의 분석 정보는 참고용이며, 내담자에게 보이지 않습니다. 분석 내용을 직접 언급하지 말고, 자연스럽게 공감하고 탐색하는 응답을 생성하세요.
+**중요**: 위의 분석 정보는 참고용이며, 내담자에게 보이지 않습니다. 
+(이전의 로컬 분석 정보를) 직접 언급하지 말고, 자연스럽게 공감하고 탐색하는 응답을 생성하세요.
 
 **응답 작성 시 고려사항**:
-1. 내담자의 감정 상태를 고려한 적절한 톤
-2. 대화 횟수(${conversationCount}회)에 맞는 깊이
-3. 이전 대화와의 연결성
-4. 1-2개의 개방형 질문으로 탐색 유도
-${urgency ? '5. 🚨 위험 상황 - 전문기관 연계 필수' : ''}
+1. 🔵 **(수정)** 내담자의 현재 메시지("${userInput}")를 바탕으로 **AI가 스스로 감정 상태와 핵심 주제를 파악**하여 공감적인 톤으로 응답하세요.
+2. 대화 횟수(${conversationCount}회)에 맞는 깊이로 탐색하세요.
+3. 이전 대화와의 연결성을 고려하세요.
+4. 1-2개의 개방형 질문으로 탐색을 유도하세요.
+${urgency ? '5. 🚨 위험 상황 - 전문기관 연계 필수 (시스템 프롬프트 지침 준수)' : ''}
 
 이제 따뜻하고 전문적인 응답을 생성해주세요.`;
 }
@@ -272,6 +259,7 @@ ${responses.map((score, index) =>
 
 /**
  * 대화 분석 프롬프트 생성
+ * (참고): 이 프롬프트는 'B 파이프라인(초기 진단)'용이므로 수정하지 않습니다.
  */
 function buildConversationAnalysisPrompt(conversationHistory) {
     let summary = `지금까지 ${conversationHistory.length}회의 대화가 진행되었습니다.\n\n`;
@@ -312,6 +300,7 @@ function buildConversationAnalysisPrompt(conversationHistory) {
 
 ## 분석 요청
 위 대화 내용을 바탕으로 다음을 제공해주세요:
+(여기에 '초기 진단' 목표를 더 명확하게 지시할 수 있습니다. 예: "주요 호소 문제", "핵심 감정")
 
 1. **주요 발견사항** (3-4개)
    - 반복적으로 나타나는 주제
